@@ -13,7 +13,3 @@ def pascal_triangle(n):
         triangle.append(row)
     
     return triangle
-
-# Example usage:
-n = 5
-print(pascal_triangle(n))
