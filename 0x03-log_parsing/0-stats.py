@@ -1,59 +1,39 @@
 #!/usr/bin/python3
 """
-Reads stdin line by line and computes metrics
+Log parsing
 """
 
 import sys
 
+if __name__ == '__main__':
 
-def get_line(line):
-    """
-    Parse a log entry and update the status code counts.
-    """
-    try:
-        parsed_line = line.split()
-        status_code = parsed_line[-2]
-        if status_code in status:
-            status[status_code] += 1
-        return int(parsed_line[-1])
-    except Exception:
-        return 0
+    filesize, count = 0, 0
+    codes = ["200", "301", "400", "401", "403", "404", "405", "500"]
+    stats = {k: 0 for k in codes}
 
-
-def print_stats():
-    """
-    Print statistics based on the total file size
-    and status code counts.
-    """
-    print("File size: {}".format(file_size))
-    for key in sorted(status):
-        if status[key]:
-            print("{}: {}".format(key, status[key]))
-
-
-if __name__ == "__main__":
-    # Initialize status code counts, line count, and total file size
-    status = {"200": 0,
-              "301": 0,
-              "400": 0,
-              "401": 0,
-              "403": 0,
-              "404": 0,
-              "405": 0,
-              "500": 0}
-    count = 1
-    file_size = 0
+    def print_stats(stats: dict, file_size: int) -> None:
+        print("File size: {:d}".format(filesize))
+        for k, v in sorted(stats.items()):
+            if v:
+                print("{}: {}".format(k, v))
 
     try:
-        # Process log entries from stdin
         for line in sys.stdin:
-            file_size += get_line(line)
-            # Print statistics after every 10 lines
-            if count % 10 == 0:
-                print_stats()
             count += 1
+            data = line.split()
+            try:
+                status_code = data[-2]
+                if status_code in stats:
+                    stats[status_code] += 1
+            except BaseException:
+                pass
+            try:
+                filesize += int(data[-1])
+            except BaseException:
+                pass
+            if count % 10 == 0:
+                print_stats(stats, filesize)
+        print_stats(stats, filesize)
     except KeyboardInterrupt:
-        # Handle Ctrl+C gracefully, print final statistics before exiting
-        print_stats()
+        print_stats(stats, filesize)
         raise
-    print_stats()
