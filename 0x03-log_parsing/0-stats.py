@@ -1,49 +1,58 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
+
+
+"""
+This module holds a simple module to do log
+parsing. Given a input of log files, extract some
+usefull information and print it to standard output
+"""
 
 import sys
-import signal
+import re
+def check_log_format(log_string):
+    regex_pattern = r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3} - \[.*\] "GET \/projects\/260 HTTP\/1\.1" \d{3} \d+'
+    return re.match(regex_pattern, log_string)
 
-# Define variables to store metrics
-total_file_size = 0
-status_code_count = {200: 0, 301: 0, 400: 0, 401: 0, 403: 0, 404: 0, 405: 0, 500: 0}
-line_count = 0
 
-# Signal handler for keyboard interruption
-def signal_handler(sig, frame):
-    print_statistics()
-    sys.exit(0)
+def print_to_stdout(**kwargs):
+    """
+    A simple helper function to print
+    the values to standard output
+    """
+    for key in kwargs.keys():
+        if not isinstance(kwargs.get(key), dict):
+            # Means this is not a dictionary of dictionaries
+            # So Its the file size
+            print("File Size {}".format(kwargs.get(key)))
+        else:
+            for nested_k, nested_v in key.items():
+                print(f"{nested_k}: {nested_v}")
 
-# Function to print statistics
-def print_statistics():
-    print(f"Total file size: {total_file_size}")
-    for code in sorted(status_code_count.keys()):
-        if status_code_count[code] > 0:
-            print(f"{code}: {status_code_count[code]}")
 
-# Register signal handler for keyboard interruption
-signal.signal(signal.SIGINT, signal_handler)
+def read_and_analyze_log_files():
+    while True:
+        try:
+            status_codes = {
+                "200": 0,
+                "301": 0,
+                "400": 0,
+                "401": 0,
+                "403": 0,
+                "404": 0,
+                "405": 0,
+                "500": 0
 
-# Read stdin line by line
-for line in sys.stdin:
-    line = line.strip()
-    
-    # Split the line by space
-    parts = line.split()
-    
-    # Check if the line matches the expected format
-    if len(parts) == 7:
-        ip_address, date, request, status_code_str, file_size_str = parts
-        if request == "GET" and file_size_str.isdigit():
-            status_code = int(status_code_str)
-            file_size = int(file_size_str)
-            
-            # Update metrics
-            total_file_size += file_size
-            status_code_count[status_code] += 1
-            line_count += 1
-            
-            # Check if it's time to print statistics
-            if line_count % 10 == 0:
-                print_statistics()
-    else:
-        continue
+            }
+            total_size = 0
+            for time in range(11):
+                log_info = input("").strip()
+                if check_log_format(log_info):
+                    log_info_list = log_info.split(" ")
+                    f_size = log_info_list[-1]
+                    s_code = log_info_list[-2]
+                    status_codes[s_code] = status_codes.get(s_code) + 1
+                    total_size += int(f_size)
+                    sorted_keys_dict = {code: status_codes[code] for code in sorted(status_codes)}
+            print_to_stdout(codes=sorted_keys_dict, size = total_size)
+        except KeyboardInterrupt:
+            print_to_stdout(codes=sorted_keys_dict, size = total_size)
